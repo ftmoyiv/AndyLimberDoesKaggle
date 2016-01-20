@@ -7,7 +7,8 @@ plotCompare <- function(var1,var2,data){
     geom_point(aes(colour = as.factor(popularity))) +
     theme_bw() +
     scale_colour_manual("popularity",
-                        values = c("blue", "red", "black", "green", "yellow"))
+                        values = c("blue", "red", "black", "green", "yellow")) # change colour scale here if you want
 }
 
+# Put the names of the columns you want to graph as var1 and var2
 plotCompare(var1 = "n_tokens_content", var2 = "num_imgs", data = trainData)
