@@ -19,6 +19,7 @@ testData <- read.csv("news_popularity_test.csv", stringsAsFactors = T)
 ### Variable creation section ###
 
 # This function pulls the year and months from the URL included in the data
+# Will probably add all other "designed" features here
 getDates <- function(train,test){
   test$popularity <- NA
   n <- nrow(train)
@@ -119,11 +120,10 @@ predLabs <- function(train, test, vars = NA , pdf = TRUE, csv = TRUE){
 
 
 
-
-
 ### RANDOM TREES ###
 if (!require("randomForest")) install.packages("randomForest"); library(randomForest)
 if (!require("party")) install.packages("party"); library(party)
+if (!require("unbalanced")) install.packages("unbalanced"); library(unbalanced)
 
 # A function that does a similar thing to above, but now using random trees.
 # Two options of method, changed by setting "rand" to T or F - F is a bit buggy
@@ -133,7 +133,8 @@ if (!require("party")) install.packages("party"); library(party)
 # PDF = TRUE CURRENTLY DOES NOT WORK
 # NOTE that dummytest = T will not provide a "submittable" CSV file
 predLabsRF <- function(train, test, vars = NA, NT = 100, seed = 123, 
-                       pdf = FALSE, csv = TRUE, rand = TRUE, dummytest = FALSE){
+                       pdf = FALSE, csv = TRUE, rand = TRUE, dummytest = FALSE,
+                       DATA = FALSE){
   set.seed(seed)
   if(is.na(vars)){
     n <- length(names(train)) - 1
@@ -151,7 +152,8 @@ predLabsRF <- function(train, test, vars = NA, NT = 100, seed = 123,
 
   # Cross validating step
   if(dummytest){
-    subset <- sample(c(1:20000))
+    m <- ceiling(nrow(train)/3)
+    subset <- sample(c(1:2*m))
     test <- train[-subset,]
     train <- train[subset,]
     
@@ -159,7 +161,8 @@ predLabsRF <- function(train, test, vars = NA, NT = 100, seed = 123,
   
   # Creating the random forests. The second method only works for certain seeds.
   if(rand){
-    randomTree <- randomForest(form, data = train, importance = TRUE, ntree = NT)
+    randomTree <- randomForest(form, data = train, importance = TRUE, ntree = NT, 
+                               mtry = 7)
     Prediction <- predict(randomTree, test, type = "class")
     
   } else {
@@ -188,7 +191,9 @@ predLabsRF <- function(train, test, vars = NA, NT = 100, seed = 123,
     write.csv(popularityClass,"kagglesub.csv", row.names = F, quote = F)
   }
   
-  return(randomTree)
+  if(!DATA) return(randomTree)
+  if(DATA) return(popularityClass)
+  
 }
 
 # Example run with "importance plot"
@@ -196,8 +201,9 @@ vec <- c(1:(length(names(train))-1)) # all the variables
 
 variables <- c(names(train)[1:2])
 newVec <- vec[-getVar(variables,train)]
-randomFor <- predLabsRF(train,test, csv = TRUE, rand = F, dummytest = T,
-                        vars = newVec, seed = 1000)
+randomFor <- predLabsRF(train,test, csv = TRUE, rand = T, dummytest = T,
+                        vars = newVec, NT = 100, seed = 100)
+
 
 
 # The plot of which variables are important
